@@ -18,6 +18,14 @@ const attemptsCount = document.querySelector('#attemptsCount');
 let currentFile = null;
 let detectorPromise = null;
 const API_BASE = 'https://checker-api-boj2.onrender.com';
+const originalFetch = window.fetch.bind(window);
+
+window.fetch = (url, options = {}) => {
+  if (typeof url === 'string' && url.startsWith(API_BASE)) {
+    options = { ...options, credentials: 'include' };
+  }
+  return originalFetch(url, options);
+};
 async function enforceStudentAccess() {
   try {
     const response = await fetch(`${API_BASE}/api/me`);

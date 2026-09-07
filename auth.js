@@ -3,7 +3,14 @@ const errorMessage = document.querySelector('#formError');
 const successPanel = document.querySelector('#registerSuccess');
 const emailPattern = /^[^\s@]+@sdu\.edu\.kz$/i;
 const API_BASE = 'https://checker-api-boj2.onrender.com';
+const originalFetch = window.fetch.bind(window);
 
+window.fetch = (url, options = {}) => {
+  if (typeof url === 'string' && url.startsWith(API_BASE)) {
+    options = { ...options, credentials: 'include' };
+  }
+  return originalFetch(url, options);
+};
 form.addEventListener('submit', async (event) => {
   event.preventDefault();
   const name = document.querySelector('#registerName').value.trim();

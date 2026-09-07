@@ -1,5 +1,12 @@
 const API_BASE = 'https://checker-api-boj2.onrender.com';
+const originalFetch = window.fetch.bind(window);
 
+window.fetch = (url, options = {}) => {
+  if (typeof url === 'string' && url.startsWith(API_BASE)) {
+    options = { ...options, credentials: 'include' };
+  }
+  return originalFetch(url, options);
+};
 function escapeHtml(value) {
   return String(value ?? '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
 }
