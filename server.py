@@ -8,6 +8,8 @@ import re
 import secrets
 import smtplib
 import sqlite3
+import urllib.request
+import urllib.error
 from datetime import datetime, timedelta
 from email.message import EmailMessage
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
@@ -186,45 +188,95 @@ def create_session(connection, student_id):
 
 
 def extract_assignment_text(image_data):
-    """Run free, local OCR. No image or text is sent to an OCR provider."""
-    if pytesseract is None or Image is None:
-        raise RuntimeError('OCR dependencies are not installed. Use the Docker setup or install Pillow and pytesseract.')
+    """Extract assignment text from an image using Gemini."""
+
+    api_key = os.getenv('GEMINI_API_KEY')
+    if not api_key:
+        raise RuntimeError('GEMINI_API_KEY is not configured.')
+
     if not image_data or ',' not in image_data:
         raise ValueError('Upload a valid image.')
+
     try:
-        image_bytes = base64.b64decode(image_data.split(',', 1)[1], validate=True)
+        header, encoded_image = image_data.split(',', 1)
+        image_bytes = base64.b64decode(encoded_image, validate=True)
     except (ValueError, binascii.Error) as error:
         raise ValueError('The uploaded image data is invalid.') from error
+
     if len(image_bytes) > 10 * 1024 * 1024:
         raise ValueError('The image must be smaller than 10 MB.')
-    try:
-        with Image.open(io.BytesIO(image_bytes)) as uploaded:
-            image = ImageOps.exif_transpose(uploaded).convert('RGB')
-    except (UnidentifiedImageError, OSError) as error:
-        raise ValueError('The uploaded file is not a readable image.') from error
-    if image.width * image.height > 24_000_000:
-        # Large phone photos are expensive to OCR on Render's free instance.
-        # Downscaling keeps text readable while dramatically reducing OCR time.
-        image.thumbnail((1800, 1800), Image.Resampling.LANCZOS)
-    else:
-        image.thumbnail((1800, 1800), Image.Resampling.LANCZOS)
 
-    # Tesseract is faster and usually more accurate on a normalized grayscale image.
-    prepared = ImageOps.autocontrast(ImageOps.grayscale(image))
-    languages = os.getenv('TESSERACT_LANGUAGES', 'eng+rus+kaz')
-    ocr_timeout = int(os.getenv('OCR_TIMEOUT_SECONDS', '75'))
+    mime_match = re.match(r'data:(image/[^;]+);base64', header)
+    mime_type = mime_match.group(1) if mime_match else 'image/jpeg'
+
+    prompt = """
+Read the practical assignment shown in this image.
+
+Extract all readable student-written text as accurately as possible.
+
+The text may be in English, Russian, Kazakh, or a mixture of these languages.
+
+Rules:
+- Preserve the original language.
+- Do not translate.
+- Do not rewrite or improve the student's writing.
+- Do not answer the assignment.
+- Do not add explanations.
+- Ignore interface elements or irrelevant background text.
+- Return only the text that is actually visible in the student's work.
+"""
+
+    payload = {
+        'contents': [{
+            'parts': [
+                {'text': prompt},
+                {
+                    'inline_data': {
+                        'mime_type': mime_type,
+                        'data': encoded_image
+                    }
+                }
+            ]
+        }],
+        'generationConfig': {
+            'temperature': 0,
+            'maxOutputTokens': 8192
+        }
+    }
+
+    url = (
+        'https://generativelanguage.googleapis.com/v1beta/'
+        'models/gemini-2.5-flash:generateContent'
+        f'?key={api_key}'
+    )
+
+    request = urllib.request.Request(
+        url,
+        data=json.dumps(payload).encode('utf-8'),
+        headers={'Content-Type': 'application/json'},
+        method='POST'
+    )
+
     try:
-        text = pytesseract.image_to_string(
-            prepared,
-            lang=languages,
-            config='--oem 1 --psm 6 -c preserve_interword_spaces=1',
-            timeout=ocr_timeout,
-        )
-    except RuntimeError as error:
-        raise ValueError('OCR took too long. Try a smaller, clearer image.') from error
-    text = '\n'.join(line.strip() for line in text.splitlines() if line.strip()).strip()
+        with urllib.request.urlopen(request, timeout=60) as response:
+            result = json.loads(response.read().decode('utf-8'))
+    except urllib.error.HTTPError as error:
+        details = error.read().decode('utf-8', errors='replace')
+        print('Gemini API error:', details)
+        raise ValueError('Gemini could not read this assignment.') from error
+    except (urllib.error.URLError, TimeoutError) as error:
+        raise ValueError('Gemini took too long. Please try again.') from error
+
+    try:
+        text = result['candidates'][0]['content']['parts'][0]['text'].strip()
+    except (KeyError, IndexError, TypeError):
+        raise ValueError('Gemini did not return readable text.')
+
     if len(text.split()) < 20:
-        raise ValueError('Too little text was recognized. Use a clear, well-lit photo with at least 20 words.')
+        raise ValueError(
+            'Too little text was recognized. Use a clear image with at least 20 words.'
+        )
+
     return text
 
 
