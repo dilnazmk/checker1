@@ -188,11 +188,13 @@ def create_session(connection, student_id):
 
 
 def extract_assignment_text(image_data):
-    """Extract assignment text from an image using Gemini."""
+    """Extract assignment text using Cloudflare Workers AI."""
 
-    api_key = os.getenv('GEMINI_API_KEY')
-    if not api_key:
-        raise RuntimeError('GEMINI_API_KEY is not configured.')
+    account_id = os.getenv('CLOUDFLARE_ACCOUNT_ID')
+    api_token = os.getenv('CLOUDFLARE_API_TOKEN')
+
+    if not account_id or not api_token:
+        raise RuntimeError('Cloudflare Workers AI is not configured.')
 
     if not image_data or ',' not in image_data:
         raise ValueError('Upload a valid image.')
@@ -206,71 +208,79 @@ def extract_assignment_text(image_data):
     if len(image_bytes) > 10 * 1024 * 1024:
         raise ValueError('The image must be smaller than 10 MB.')
 
-    mime_match = re.match(r'data:(image/[^;]+);base64', header)
-    mime_type = mime_match.group(1) if mime_match else 'image/jpeg'
-
     prompt = """
-Read the practical assignment shown in this image.
+Read the student's practical assignment shown in this image.
 
-Extract all readable student-written text as accurately as possible.
+Extract all readable student-written text accurately.
 
-The text may be in English, Russian, Kazakh, or a mixture of these languages.
+The text may be in English, Russian, Kazakh, or a mixture.
 
 Rules:
 - Preserve the original language.
 - Do not translate.
-- Do not rewrite or improve the student's writing.
+- Do not correct spelling or grammar.
+- Do not rewrite the student's work.
 - Do not answer the assignment.
 - Do not add explanations.
-- Ignore interface elements or irrelevant background text.
-- Return only the text that is actually visible in the student's work.
+- Return only the text visible in the student's work.
 """
 
     payload = {
-        'contents': [{
-            'parts': [
-                {'text': prompt},
-                {
-                    'inline_data': {
-                        'mime_type': mime_type,
-                        'data': encoded_image
-                    }
-                }
-            ]
-        }],
-        'generationConfig': {
-            'temperature': 0,
-            'maxOutputTokens': 8192
-        }
+        'prompt': prompt,
+        'image': list(image_bytes),
+        'max_tokens': 4096
     }
 
+    model = '@cf/meta/llama-3.2-11b-vision-instruct'
+
     url = (
-        'https://generativelanguage.googleapis.com/v1beta/'
-        'models/gemini-3.6-flash:generateContent'
-        f'?key={api_key}'
+        f'https://api.cloudflare.com/client/v4/accounts/'
+        f'{account_id}/ai/run/{model}'
     )
 
     request = urllib.request.Request(
         url,
         data=json.dumps(payload).encode('utf-8'),
-        headers={'Content-Type': 'application/json'},
+        headers={
+            'Authorization': f'Bearer {api_token}',
+            'Content-Type': 'application/json'
+        },
         method='POST'
     )
 
     try:
         with urllib.request.urlopen(request, timeout=60) as response:
             result = json.loads(response.read().decode('utf-8'))
+
     except urllib.error.HTTPError as error:
         details = error.read().decode('utf-8', errors='replace')
-        print('Gemini API error:', details)
-        raise ValueError('Gemini could not read this assignment.') from error
-    except (urllib.error.URLError, TimeoutError) as error:
-        raise ValueError('Gemini took too long. Please try again.') from error
+        print('Cloudflare AI error:', details)
+        raise ValueError(
+            'Cloudflare AI could not read this assignment.'
+        ) from error
 
-    try:
-        text = result['candidates'][0]['content']['parts'][0]['text'].strip()
-    except (KeyError, IndexError, TypeError):
-        raise ValueError('Gemini did not return readable text.')
+    except (urllib.error.URLError, TimeoutError) as error:
+        raise ValueError(
+            'Cloudflare AI took too long. Please try again.'
+        ) from error
+
+    if not result.get('success'):
+        print('Cloudflare AI error:', result)
+        raise ValueError('Cloudflare AI could not read this assignment.')
+
+    ai_result = result.get('result', {})
+
+    if isinstance(ai_result, dict):
+        text = (
+            ai_result.get('response')
+            or ai_result.get('description')
+            or ai_result.get('text')
+            or ''
+        )
+    else:
+        text = str(ai_result)
+
+    text = text.strip()
 
     if len(text.split()) < 20:
         raise ValueError(
