@@ -186,7 +186,110 @@ def create_session(connection, student_id):
     execute(connection, 'INSERT INTO sessions (token, student_id, expires_at) VALUES (?, ?, ?)', (token, student_id, expires_at))
     return token
 
+def extract_assignment_text(image_data):
+    """Extract assignment text from an image using Cloudflare Workers AI."""
 
+    account_id = os.getenv('CLOUDFLARE_ACCOUNT_ID')
+    api_token = os.getenv('CLOUDFLARE_API_TOKEN')
+
+    if not account_id or not api_token:
+        raise RuntimeError('Cloudflare Workers AI is not configured.')
+
+    if not image_data or ',' not in image_data:
+        raise ValueError('Upload a valid image.')
+
+    try:
+        _, encoded_image = image_data.split(',', 1)
+        image_bytes = base64.b64decode(encoded_image, validate=True)
+    except (ValueError, binascii.Error) as error:
+        raise ValueError('The uploaded image data is invalid.') from error
+
+    if len(image_bytes) > 10 * 1024 * 1024:
+        raise ValueError('The image must be smaller than 10 MB.')
+
+    prompt = """
+Read the student's practical assignment shown in this image.
+
+Extract all readable student-written text accurately.
+
+The text may be in English, Russian, Kazakh, or a mixture.
+
+Rules:
+- Preserve the original language.
+- Do not translate.
+- Do not correct spelling or grammar.
+- Do not rewrite the student's work.
+- Do not answer the assignment.
+- Do not add explanations.
+- Return only the text visible in the student's work.
+"""
+
+    payload = {
+        'prompt': prompt,
+        'image': list(image_bytes),
+        'max_tokens': 4096
+    }
+
+    model = '@cf/meta/llama-3.2-11b-vision-instruct'
+
+    url = (
+        f'https://api.cloudflare.com/client/v4/accounts/'
+        f'{account_id}/ai/run/{model}'
+    )
+
+    request = urllib.request.Request(
+        url,
+        data=json.dumps(payload).encode('utf-8'),
+        headers={
+            'Authorization': f'Bearer {api_token}',
+            'Content-Type': 'application/json'
+        },
+        method='POST'
+    )
+
+    try:
+        with urllib.request.urlopen(request, timeout=60) as response:
+            result = json.loads(response.read().decode('utf-8'))
+
+    except urllib.error.HTTPError as error:
+        details = error.read().decode('utf-8', errors='replace')
+        print('Cloudflare AI error:', details)
+        raise ValueError(
+            'Cloudflare AI could not read this assignment.'
+        ) from error
+
+    except (urllib.error.URLError, TimeoutError) as error:
+        raise ValueError(
+            'Cloudflare AI took too long. Please try again.'
+        ) from error
+
+    if not result.get('success'):
+        print('Cloudflare AI error:', result)
+        raise ValueError(
+            'Cloudflare AI could not read this assignment.'
+        )
+
+    ai_result = result.get('result', {})
+
+    if isinstance(ai_result, dict):
+        text = (
+            ai_result.get('response')
+            or ai_result.get('description')
+            or ai_result.get('text')
+            or ''
+        )
+    else:
+        text = str(ai_result)
+
+    text = text.strip()
+
+    if len(text.split()) < 20:
+        raise ValueError(
+            'Too little text was recognized. '
+            'Use a clear image with at least 20 words.'
+        )
+
+    return text
 def analyze_assignment_text(text):
     """Analyze extracted assignment text using Cloudflare Workers AI."""
 
