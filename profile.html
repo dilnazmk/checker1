@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My profile — Assignment Checker</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app-shell page-shell">
+    <header class="topbar">
+      <nav class="site-nav" aria-label="Main navigation">
+        <a href="index.html">Assignments</a>
+        <a class="active" href="profile.html">Profile</a>
+      </nav>
+      <div class="header-meta">
+        <span class="status-dot"></span>
+        <span>Student</span>
+        <button class="register-link logout-button" id="logoutButton" type="button">Log out ↗</button>
+        <button class="avatar" type="button" id="avatarInitials">S</button>
+      </div>
+    </header>
+    <main class="page-main profile-page">
+      <a class="back-link" href="index.html">← Back to assignments</a>
+      <section class="profile-hero">
+        <span class="profile-avatar avatar-coral profile-avatar-large" id="profileAvatar">S</span>
+        <div>
+          <p class="eyebrow">Student profile / 01</p>
+          <h1 id="profileName">Loading…</h1>
+          <p class="profile-meta" id="profileMeta">—</p>
+        </div>
+      </section>
+
+      <section class="dashboard-card" style="margin-bottom: 30px;">
+        <div class="card-topline"><span class="section-label">Summary</span><span class="count-label" id="summaryCount">0 submissions</span></div>
+        <div class="attempt-scores">
+          <div class="attempt-score-block"><span>Total attempts</span><strong id="totalAttempts">0</strong></div>
+          <div class="attempt-score-block"><span>Graded</span><strong id="gradedCount">0</strong></div>
+          <div class="attempt-score-block"><span>Average grade</span><strong id="averageGrade">—</strong></div>
+        </div>
+      </section>
+
+      <section class="history-section">
+        <div class="card-topline"><span class="section-label">Submission history</span><span class="count-label" id="historyCount">0 submissions</span></div>
+        <div id="historyRows"></div>
+      </section>
+    </main>
+    <footer><span>© 2026</span><span>Student profile</span><span><a href="index.html">Start a new attempt ↗</a></span></footer>
+  </div>
+  <script src="profile.js"></script>
+</body>
+</html>

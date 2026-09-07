@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My profile — Assignment Checker</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body class="teacher-shell">
+  <div class="app-shell page-shell">
+    <header class="topbar">
+      <nav class="site-nav" aria-label="Main navigation">
+        <a href="teacher.html">Students</a>
+        <a class="active" href="teacher-profile.html">Profile</a>
+      </nav>
+      <div class="header-meta"><span class="status-dot"></span><span>Teacher</span><button class="register-link logout-button" id="logoutButton" type="button">Log out ↗</button><button class="avatar" type="button" id="avatarInitials">T</button></div>
+    </header>
+    <main class="page-main profile-page">
+      <a class="back-link" href="teacher.html">← Back to students</a>
+      <section class="profile-hero teacher-profile-hero">
+        <span class="profile-avatar avatar-blue profile-avatar-large" id="teacherAvatar">T</span>
+        <div>
+          <p class="eyebrow">Teacher profile / 01</p>
+          <h1 id="teacherName">Loading…</h1>
+          <p class="profile-meta" id="teacherMeta">Teacher account</p>
+        </div>
+        <span class="shared-badge">Teacher account</span>
+      </section>
+
+      <section class="profile-check-grid">
+        <div class="dashboard-card">
+          <span class="section-label">Your groups</span>
+          <h2>Classes you teach</h2>
+          <div class="attempt-scores" style="margin-top:14px;">
+            <div class="attempt-score-block"><span>Groups</span><strong id="groupCount">0</strong></div>
+            <div class="attempt-score-block"><span>Students</span><strong id="studentCount">0</strong></div>
+          </div>
+          <div class="group-list" id="groupsSummaryList" style="margin-top:18px;"></div>
+        </div>
+        <div class="dashboard-card feedback-card">
+          <span class="section-label">Account details</span>
+          <h2>Connected account.</h2>
+          <p>Your teacher account gives you access to student submissions, check results, and grading tools across all of your groups.</p>
+          <div class="feedback-mini"><span class="feedback-icon mint">✓</span><div><strong>Verified account</strong><small id="teacherEmail">—</small></div></div>
+          <div class="feedback-mini"><span class="feedback-icon coral">↗</span><div><strong>Teacher access</strong><small>Can review and grade all student submissions</small></div></div>
+        </div>
+      </section>
+    </main>
+    <footer><span>© 2026</span><span>Teacher profile</span><span><a href="teacher.html">Back to students ↗</a></span></footer>
+  </div>
+  <script src="teacher-profile.js"></script>
+</body>
+</html>

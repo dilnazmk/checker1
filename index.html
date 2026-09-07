@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Assignment Checker — Check your practical work</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <nav class="site-nav" aria-label="Main navigation">
+        <a class="active" href="index.html">Assignments</a>
+        <a href="profile.html">Profile</a>
+      </nav>
+      <div class="header-meta">
+        <span class="status-dot"></span>
+        <span id="roleLabel">Student</span>
+        <button class="register-link logout-button" id="logoutButton" type="button">Log out ↗</button>
+        <button class="avatar" type="button" id="avatarInitials" aria-label="Open profile menu">S</button>
+      </div>
+    </header>
+
+    <main id="top">
+      <section class="intro">
+        <div>
+          <p class="eyebrow">Assignment checker / 01</p>
+          <h1>Check your<br /><em>practical assignment.</em></h1>
+        </div>
+        <p class="intro-copy">Check your practical work before submission. Upload each attempt, see your check result, and track the grade your teacher assigns.</p>
+      </section>
+
+      <section class="attempts-section" aria-label="Your assignment attempts">
+        <div class="card-topline"><span class="section-label">Your assignments</span><span class="count-label" id="attemptsCount">0 attempts</span></div>
+        <div class="attempts-grid" id="attemptsGrid">
+          <div class="dashboard-card attempt-card new-attempt-card">
+            <button class="new-attempt-toggle" id="newAttemptToggle" type="button"><span>+</span> New attempt</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="workspace" aria-label="Assignment checker" id="workspaceSection" hidden>
+        <div class="upload-panel">
+          <div class="panel-heading">
+            <div>
+              <p class="section-label">New attempt</p>
+              <h2>Submit your practical work</h2>
+            </div>
+            <span class="step-count">01 <b>/</b> 01</span>
+          </div>
+
+          <div class="assignment-title-field">
+            <label for="assignmentTitle">Assignment / practical work title</label>
+            <input id="assignmentTitle" type="text" placeholder="e.g. Practical Work #1 – HTML Basics" />
+            <small>Enter the title of the practical work or assignment you are submitting.</small>
+          </div>
+
+          <label class="drop-zone" id="dropZone" for="fileInput">
+            <input id="fileInput" type="file" accept="image/*" />
+            <div class="drop-art" aria-hidden="true">
+              <span class="paper paper-back"></span>
+              <span class="paper paper-front"><span class="paper-line"></span><span class="paper-line short"></span><span class="paper-line"></span></span>
+              <span class="upload-arrow">↑</span>
+            </div>
+            <div class="drop-copy">
+              <strong>Choose a photo or drag it here</strong>
+              <span>JPG, PNG, or HEIC <b>·</b> up to 10 MB</span>
+            </div>
+            <span class="browse-link">Browse files <span aria-hidden="true">↗</span></span>
+          </label>
+
+          <div class="privacy-note"><span class="lock-icon" aria-hidden="true">⌑</span> Your file is checked in this session and never shared.</div>
+
+          <div class="selected-file" id="selectedFile" hidden>
+            <div class="file-preview" id="filePreview"></div>
+            <div class="file-details"><span class="file-name" id="fileName"></span><span class="file-size" id="fileSize"></span></div>
+            <button class="remove-file" id="removeFile" type="button" aria-label="Remove selected file">×</button>
+          </div>
+
+          <button class="analyze-button" id="analyzeButton" type="button" disabled>
+            <span>Check my assignment</span><span class="button-arrow">↗</span>
+          </button>
+        </div>
+
+        <aside class="insight-panel" id="insightPanel">
+          <div class="insight-topline"><span class="section-label">Check result</span><span class="live-pill"><i></i> Visible to your teacher</span></div>
+          <div class="empty-state" id="emptyState">
+            <div class="orbit" aria-hidden="true"><span></span><span></span><span></span></div>
+            <h3>Your result<br /><em>will land here.</em></h3>
+            <p>We’ll look at your submission for writing patterns, phrasing, and consistency before you submit it for grading.</p>
+          </div>
+
+          <div class="loading-state" id="loadingState" hidden>
+            <div class="loading-ring"></div>
+            <p class="loading-label">Reading your assignment<span class="loading-dots">...</span></p>
+            <span class="loading-subtext">Looking for patterns and signals</span>
+          </div>
+
+          <div class="result-state" id="resultState" hidden>
+            <div class="result-heading"><span class="result-kicker">Check result</span><span class="result-date">Just now</span></div>
+            <div class="score-row"><strong id="scoreValue">0</strong><span>%</span><div class="score-verdict"><i></i><span id="verdictText">Check complete</span></div></div>
+            <div class="score-track"><span id="scoreBar"></span></div>
+            <p class="result-summary" id="resultSummary">Your result is an estimate to help you review before submission.</p>
+            <div class="feedback-list" id="feedbackList"></div>
+            <button class="text-button" type="button" id="newCheckButton">Check another attempt <span>↗</span></button>
+          </div>
+        </aside>
+      </section>
+
+      <section class="bottom-note"><span class="note-line"></span><p><strong>A helpful signal, not a final grade.</strong> Use this check as one perspective while you review your work — your teacher assigns the final grade.</p><span class="note-index">02</span></section>
+    </main>
+
+    <footer><span>© 2026</span><span>Academic assignment checker</span><span>Student mode <b>●</b></span></footer>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>

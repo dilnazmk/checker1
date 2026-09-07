@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Students — Assignment Checker</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body class="teacher-shell">
+  <div class="app-shell page-shell">
+    <header class="topbar">
+      <nav class="site-nav" aria-label="Main navigation">
+        <a class="active" href="teacher.html">Students</a>
+        <a href="teacher-profile.html">Profile</a>
+      </nav>
+      <div class="header-meta"><span class="status-dot"></span><span>Teacher</span><button class="register-link logout-button" id="logoutButton" type="button">Log out ↗</button><button class="avatar" type="button" id="avatarInitials">T</button></div>
+    </header>
+    <main class="page-main">
+      <div class="page-title-row">
+        <div>
+          <p class="eyebrow">Teacher workspace / 01</p>
+          <h1>Your<br /><em>students.</em></h1>
+          <p class="page-lede">Organize students into groups, open a profile, and review their submitted attempts.</p>
+        </div>
+      </div>
+
+      <section class="students-layout">
+        <div class="sidebar-panel group-panel">
+          <div class="card-topline"><span class="section-label">Groups</span><span class="count-label" id="groupTotalCount">0 groups</span></div>
+          <div class="group-list" id="groupList">
+            <button class="group-item active" type="button" data-group="all"><span>All students</span><span class="group-count" id="allStudentsCount">0</span></button>
+            <button class="group-item" type="button" data-group="none"><span>Ungrouped</span><span class="group-count" id="ungroupedCount">0</span></button>
+          </div>
+          <form class="add-group-form" id="createGroupForm">
+            <input id="newGroupName" type="text" placeholder="New group name" required />
+            <button type="submit" aria-label="Create group">+</button>
+          </form>
+        </div>
+
+        <div class="dashboard-card roster-card">
+          <div class="card-topline"><span class="section-label" id="rosterLabel">All students</span><span class="count-label" id="enrollmentCount">0 enrolled</span></div>
+          <div class="profile-list" id="studentList"></div>
+        </div>
+      </section>
+    </main>
+    <footer><span>© 2026</span><span>Teacher workspace</span><span><a href="index.html">Back to student check ↗</a></span></footer>
+  </div>
+  <script src="teacher.js"></script>
+</body>
+</html>

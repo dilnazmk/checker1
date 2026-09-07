@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Student profile — Assignment Checker</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body class="teacher-shell">
+  <div class="app-shell page-shell">
+    <header class="topbar">
+      <nav class="site-nav" aria-label="Main navigation">
+        <a class="active" href="teacher.html">Students</a>
+        <a href="teacher-profile.html">Profile</a>
+      </nav>
+      <div class="header-meta"><span class="status-dot"></span><span>Teacher</span><button class="register-link logout-button" id="logoutButton" type="button">Log out ↗</button><button class="avatar" type="button" id="avatarInitials">T</button></div>
+    </header>
+    <main class="page-main profile-page">
+      <a class="back-link" href="teacher.html">← Back to students</a>
+      <section class="profile-hero teacher-profile-hero">
+        <span class="profile-avatar avatar-coral profile-avatar-large" id="studentAvatar">—</span>
+        <div>
+          <p class="eyebrow">Student profile / 01</p>
+          <h1 id="studentName">Loading…</h1>
+          <p class="profile-meta" id="studentMeta">—</p>
+        </div>
+        <span class="shared-badge" id="studentGroupBadge">Ungrouped</span>
+      </section>
+
+      <section class="history-section">
+        <div class="card-topline"><span class="section-label">Submitted attempts</span><span class="count-label" id="attemptCount">0 attempts</span></div>
+        <div id="attemptsList"></div>
+      </section>
+    </main>
+    <footer><span>© 2026</span><span>Teacher workspace</span><span><a href="teacher.html">Back to students ↗</a></span></footer>
+  </div>
+  <script src="teacher-student.js"></script>
+</body>
+</html>

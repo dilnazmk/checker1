@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Create account — Assignment Checker</title><link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app-shell page-shell"><header class="topbar"><nav class="site-nav" aria-label="Main navigation"><a href="index.html">Assignments</a><a class="active" href="register.html">Create account</a></nav><div class="header-meta"><span class="status-dot"></span><span>SDU classroom</span></div></header>
+    <main class="page-main register-page"><div class="register-intro"><p class="eyebrow">Join your classroom / 01</p><h1>Start making<br /><em>it yours.</em></h1><p>Use your SDU email to create a student profile. Your teacher will automatically see your profile and shared checks.</p></div>
+      <form class="register-form" id="registerForm" novalidate><div class="form-heading"><span class="section-label">Student registration</span><span class="shared-badge">@sdu.edu.kz only</span></div><label>Full name<input id="registerName" name="name" type="text" placeholder="e.g. Amelia Morris" autocomplete="name" required /></label><label>SDU email<input id="registerEmail" name="email" type="email" placeholder="name@sdu.edu.kz" autocomplete="email" required /><small>Only official SDU student email addresses are accepted.</small></label><label>Password<input id="registerPassword" name="password" type="password" placeholder="At least 8 characters" autocomplete="new-password" minlength="8" required /></label><p class="form-error" id="formError" role="alert" hidden></p><button class="analyze-button" type="submit"><span>Create student profile</span><span class="button-arrow">↗</span></button><p class="form-terms">By creating an account, your profile becomes visible to teachers in your classroom.</p></form>
+      <div class="register-success" id="registerSuccess" hidden><span class="success-mark">✓</span><p class="section-label">Profile created</p><h2>Welcome to the classroom,<br /><em id="successName">student.</em></h2><p>Your teacher can now see your profile. You can start checking assignments right away.</p><a class="text-button" href="index.html">Go to student check <span>↗</span></a></div>
+    </main><footer><span>© 2026</span><span>SDU student access</span><span><a href="index.html">Back to student check ↗</a></span></footer>
+  </div><script src="auth.js"></script>
+</body></html>
