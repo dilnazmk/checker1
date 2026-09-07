@@ -17,8 +17,7 @@ const attemptsGrid = document.querySelector('#attemptsGrid');
 const attemptsCount = document.querySelector('#attemptsCount');
 let currentFile = null;
 let detectorPromise = null;
-const API_BASE = window.location.protocol === 'file:' ? 'http://127.0.0.1:8000' : '';
-
+const API_BASE = 'https://checker-api-boj2.onrender.com';
 async function enforceStudentAccess() {
   try {
     const response = await fetch(`${API_BASE}/api/me`);
