@@ -254,7 +254,8 @@ class CheckerHandler(SimpleHTTPRequestHandler):
         self.send_header('X-Content-Type-Options', 'nosniff')
         self.send_header('X-Frame-Options', 'DENY')
         self.send_header('Referrer-Policy', 'same-origin')
-        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Access-Control-Allow-Origin', 'https://checker1-v443.onrender.com')
+        self.send_header('Access-Control-Allow-Credentials', 'true')
         super().end_headers()
 
     def send_json(self, payload, status=200):
@@ -295,7 +296,6 @@ class CheckerHandler(SimpleHTTPRequestHandler):
 
     def do_OPTIONS(self):
         self.send_response(204)
-        self.send_header('Access-Control-Allow-Origin', '*')
         self.send_header('Access-Control-Allow-Headers', 'Content-Type')
         self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
         self.end_headers()
@@ -451,7 +451,7 @@ class CheckerHandler(SimpleHTTPRequestHandler):
         self.send_header('Content-Type', 'application/json')
         self.send_header('Content-Length', str(len(body)))
         secure = '; Secure' if os.getenv('APP_ORIGIN', '').startswith('https://') else ''
-        self.send_header('Set-Cookie', f'checker_session={token}; HttpOnly; SameSite=Lax; Path=/; Max-Age=604800{secure}')
+        self.send_header('Set-Cookie', f'checker_session={token}; HttpOnly; SameSite=None; Secure; Path=/; Max-Age=604800')
         self.end_headers()
         self.wfile.write(body)
 
@@ -525,7 +525,7 @@ class CheckerHandler(SimpleHTTPRequestHandler):
             with database() as connection:
                 execute(connection, 'DELETE FROM sessions WHERE token = ?', (token,))
         self.send_response(204)
-        self.send_header('Set-Cookie', 'checker_session=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0')
+        self.send_header('Set-Cookie', f'checker_session={token}; HttpOnly; SameSite=None; Secure; Path=/; Max-Age=604800')
         self.end_headers()
 
     def ocr(self, data):
