@@ -1,4 +1,4 @@
-const API_BASE = window.location.protocol === 'file:' ? 'http://127.0.0.1:8000' : '';
+const API_BASE = 'https://checker-api-boj2.onrender.com';
 const forgotForm = document.querySelector('#forgotForm');
 const resetForm = document.querySelector('#resetForm');
 const error = document.querySelector('#forgotError, #resetError');

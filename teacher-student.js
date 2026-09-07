@@ -1,4 +1,4 @@
-const API_BASE = window.location.protocol === 'file:' ? 'http://127.0.0.1:8000' : '';
+const API_BASE = 'https://checker-api-boj2.onrender.com';
 const studentId = new URLSearchParams(window.location.search).get('id');
 
 function escapeHtml(value) {

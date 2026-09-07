@@ -1,4 +1,4 @@
-const API_BASE = window.location.protocol === 'file:' ? 'http://127.0.0.1:8000' : '';
+const API_BASE = 'https://checker-api-boj2.onrender.com';
 
 function escapeHtml(value) {
   return String(value ?? '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));

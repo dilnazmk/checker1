@@ -2,7 +2,7 @@ const form = document.querySelector('#registerForm');
 const errorMessage = document.querySelector('#formError');
 const successPanel = document.querySelector('#registerSuccess');
 const emailPattern = /^[^\s@]+@sdu\.edu\.kz$/i;
-const API_BASE = window.location.protocol === 'file:' ? 'http://127.0.0.1:8000' : '';
+const API_BASE = 'https://checker-api-boj2.onrender.com';
 
 form.addEventListener('submit', async (event) => {
   event.preventDefault();
