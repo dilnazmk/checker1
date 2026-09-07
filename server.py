@@ -187,8 +187,8 @@ def create_session(connection, student_id):
     return token
 
 
-def extract_assignment_text(image_data):
-    """Extract assignment text using Cloudflare Workers AI."""
+def analyze_assignment_text(text):
+    """Analyze extracted assignment text using Cloudflare Workers AI."""
 
     account_id = os.getenv('CLOUDFLARE_ACCOUNT_ID')
     api_token = os.getenv('CLOUDFLARE_API_TOKEN')
@@ -196,47 +196,57 @@ def extract_assignment_text(image_data):
     if not account_id or not api_token:
         raise RuntimeError('Cloudflare Workers AI is not configured.')
 
-    if not image_data or ',' not in image_data:
-        raise ValueError('Upload a valid image.')
+    prompt = f"""
+You are analyzing a student's practical assignment.
 
-    try:
-        header, encoded_image = image_data.split(',', 1)
-        image_bytes = base64.b64decode(encoded_image, validate=True)
-    except (ValueError, binascii.Error) as error:
-        raise ValueError('The uploaded image data is invalid.') from error
+IMPORTANT:
+This is a screening signal only. Do not claim that AI authorship has been proven.
 
-    if len(image_bytes) > 10 * 1024 * 1024:
-        raise ValueError('The image must be smaller than 10 MB.')
+Analyze the writing for patterns commonly associated with AI-generated or heavily AI-assisted text, including:
+- unusually uniform sentence structure
+- generic transitions
+- repetitive phrasing
+- overly polished but vague explanations
+- lack of concrete personal or task-specific detail
+- abrupt changes in writing style
 
-    prompt = """
-Read the student's practical assignment shown in this image.
+Return ONLY valid JSON. No markdown.
 
-Extract all readable student-written text accurately.
+Use exactly this structure:
+{{
+  "score": 0,
+  "chunks": [
+    {{
+      "text": "short relevant fragment from the assignment",
+      "score": 0
+    }}
+  ]
+}}
 
-The text may be in English, Russian, Kazakh, or a mixture.
+score must be an integer from 0 to 100.
+0 means very few AI-like writing signals.
+100 means many strong AI-like writing signals.
 
-Rules:
-- Preserve the original language.
-- Do not translate.
-- Do not correct spelling or grammar.
-- Do not rewrite the student's work.
-- Do not answer the assignment.
-- Do not add explanations.
-- Return only the text visible in the student's work.
+For chunks, return up to 5 relevant fragments.
+Each chunk score must also be from 0 to 100.
+
+Student text:
+
+{text[:12000]}
 """
 
-    payload = {
-        'prompt': prompt,
-        'image': list(image_bytes),
-        'max_tokens': 4096
-    }
-
-    model = '@cf/meta/llama-3.2-11b-vision-instruct'
+    model = '@cf/meta/llama-3.1-8b-instruct-fp8'
 
     url = (
         f'https://api.cloudflare.com/client/v4/accounts/'
         f'{account_id}/ai/run/{model}'
     )
+
+    payload = {
+        'prompt': prompt,
+        'max_tokens': 1500,
+        'temperature': 0.1
+    }
 
     request = urllib.request.Request(
         url,
@@ -254,40 +264,60 @@ Rules:
 
     except urllib.error.HTTPError as error:
         details = error.read().decode('utf-8', errors='replace')
-        print('Cloudflare AI error:', details)
-        raise ValueError(
-            'Cloudflare AI could not read this assignment.'
-        ) from error
+        print('Cloudflare analysis error:', details)
+        raise ValueError('Cloudflare AI could not analyze this assignment.') from error
 
     except (urllib.error.URLError, TimeoutError) as error:
-        raise ValueError(
-            'Cloudflare AI took too long. Please try again.'
-        ) from error
+        raise ValueError('Cloudflare analysis took too long. Please try again.') from error
 
     if not result.get('success'):
-        print('Cloudflare AI error:', result)
-        raise ValueError('Cloudflare AI could not read this assignment.')
+        print('Cloudflare analysis error:', result)
+        raise ValueError('Cloudflare AI could not analyze this assignment.')
 
-    ai_result = result.get('result', {})
+    response_text = result.get('result', {}).get('response', '').strip()
 
-    if isinstance(ai_result, dict):
-        text = (
-            ai_result.get('response')
-            or ai_result.get('description')
-            or ai_result.get('text')
-            or ''
-        )
-    else:
-        text = str(ai_result)
+    response_text = re.sub(r'^```json\s*', '', response_text, flags=re.IGNORECASE)
+    response_text = re.sub(r'\s*```$', '', response_text).strip()
 
-    text = text.strip()
+    try:
+        analysis = json.loads(response_text)
+    except json.JSONDecodeError as error:
+        print('Cloudflare analysis invalid JSON:', response_text)
+        raise ValueError('Cloudflare AI returned an invalid analysis.') from error
 
-    if len(text.split()) < 20:
-        raise ValueError(
-            'Too little text was recognized. Use a clear image with at least 20 words.'
-        )
+    score = max(0, min(100, int(analysis.get('score', 0))))
 
-    return text
+    chunks = []
+
+    for chunk in analysis.get('chunks', [])[:5]:
+        chunk_text = str(chunk.get('text', '')).strip()
+
+        if not chunk_text:
+            continue
+
+        try:
+            chunk_score = max(
+                0,
+                min(100, int(chunk.get('score', score)))
+            )
+        except (TypeError, ValueError):
+            chunk_score = score
+
+        chunks.append({
+            'text': chunk_text,
+            'score': chunk_score
+        })
+
+    if not chunks:
+        chunks = [{
+            'text': text[:1200],
+            'score': score
+        }]
+
+    return {
+        'score': score,
+        'chunks': chunks
+    }
 
 
 def public_student(row):
@@ -593,9 +623,17 @@ class CheckerHandler(SimpleHTTPRequestHandler):
     def ocr(self, data):
         if not self.require_user('student'):
             return
-        text = extract_assignment_text(data.get('image_data'))
-        return self.send_json({'text': text, 'word_count': len(text.split()), 'languages': ['eng', 'rus', 'kaz']})
 
+        text = extract_assignment_text(data.get('image_data'))
+        analysis = analyze_assignment_text(text)
+
+        return self.send_json({
+            'text': text,
+            'word_count': len(text.split()),
+            'languages': ['eng', 'rus', 'kaz'],
+            'score': analysis['score'],
+            'chunks': analysis['chunks']
+        })
     def create_check(self, data):
         user = self.require_user('student')
         if not user:

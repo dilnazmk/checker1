@@ -318,8 +318,8 @@ analyzeButton.addEventListener('click', async () => {
     const ocrResult = await ocrResponse.json();
     if (!ocrResponse.ok) throw new Error(ocrResult.error || 'This image could not be read.');
 
-    const { score, chunks } = await detectAI(ocrResult.text);
-    const feedback = feedbackFor(score, chunks);
+    const score = Number(ocrResult.score);
+    const chunks = Array.isArray(ocrResult.chunks) ? ocrResult.chunks : [];    const feedback = feedbackFor(score, chunks);
     document.querySelector('#scoreValue').textContent = score;
     document.querySelector('#scoreBar').style.width = `${score}%`;
     document.querySelector('#verdictText').textContent = feedback.verdict;
