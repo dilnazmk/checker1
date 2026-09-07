@@ -196,9 +196,7 @@ function renderStudents() {
     const link = document.createElement('a');
 
     link.className = 'profile-row';
-    link.href =
-      `teacher-student.html?student_id=${encodeURIComponent(student.id)}`;
-
+    link.href = `teacher-student.html?id=${encodeURIComponent(student.id)}`;
     link.innerHTML = `
       <div class="profile-avatar">
         ${escapeHtml(

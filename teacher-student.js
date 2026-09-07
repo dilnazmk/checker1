@@ -8,7 +8,7 @@ window.fetch = (url, options = {}) => {
   return originalFetch(url, options);
 };
 const studentId = new URLSearchParams(window.location.search).get('id');
-
+let availableGroups = [];
 function escapeHtml(value) {
   return String(value ?? '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
 }
@@ -59,11 +59,60 @@ async function loadStudent() {
       document.querySelector('#studentName').textContent = 'Student not found';
       return;
     }
+    const groupsResponse = await fetch(`${API_BASE}/api/groups`);
+    const groupsResult = await groupsResponse.json();
+
+    availableGroups = groupsResult.groups || [];
     const initialsStudent = student.name.split(' ').map((part) => part[0]).join('').slice(0, 2).toUpperCase();
     document.querySelector('#studentAvatar').textContent = initialsStudent;
     document.querySelector('#studentName').textContent = student.name;
     document.querySelector('#studentMeta').textContent = `Student · ${student.email} · Joined ${(student.joined || '').slice(0, 10)}`;
     document.querySelector('#studentGroupBadge').textContent = student.group_name ? student.group_name : 'Ungrouped';
+    const groupSelect = document.querySelector('#studentGroupSelect');
+
+    groupSelect.innerHTML =
+      '<option value="">Ungrouped</option>' +
+      availableGroups.map(group => `
+        <option value="${group.id}">
+          ${escapeHtml(group.name)}
+        </option>
+      `).join('');
+
+    groupSelect.value =
+      student.group_id === null || student.group_id === undefined
+        ? ''
+        : String(student.group_id);
+
+    document.querySelector('#saveStudentGroup').onclick = async () => {
+      const groupId = groupSelect.value;
+
+      if (!groupId) {
+        alert('Select a group first.');
+        return;
+      }
+
+      const response = await fetch(
+        `${API_BASE}/api/groups/${groupId}/students`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            student_id: Number(studentId)
+          })
+        }
+      );
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        alert(result.error || 'Could not assign this student.');
+        return;
+      }
+
+      await loadStudent();
+    };
 
     const checksResponse = await fetch(`${API_BASE}/api/checks?student_id=${studentId}`);
     const checksResult = await checksResponse.json();
