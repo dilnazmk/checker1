@@ -1,63 +1,33 @@
-# Free deployment
+# Deployment
 
-This version uses only free components and does not require Google Cloud,
-Originality.ai, a payment card, or API keys.
+The Docker image builds the React frontend and runs Express. No Python, Tesseract, or browser-downloaded AI model is needed. Image reading and analysis use Cloudflare Workers AI and require its credentials.
 
-## How it works
+## Render
 
-- Render Free Web Service runs the Python server in Docker.
-- Tesseract OCR runs inside the Docker container and reads English, Russian,
-  and Kazakh text locally.
-- A quantized open-source AI-text classifier runs in the visitor's browser.
-  The model is downloaded from Hugging Face on the first check and then cached
-  by the browser. The first check can therefore take noticeably longer.
-- Render Free PostgreSQL stores student profiles and saved results.
-- Uploaded assignment images are processed for OCR but are not stored in the
-  database.
+Use the existing `render.yaml` Blueprint. It connects the service to PostgreSQL through `DATABASE_URL`. Set these service environment variables:
 
-## Deploy on Render
+- `APP_ORIGIN`: the public HTTPS service URL, without a trailing slash.
+- `CLOUDFLARE_ACCOUNT_ID` and `CLOUDFLARE_API_TOKEN`: credentials permitted to run Workers AI.
+- `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, and `SMTP_FROM`: password recovery email settings. Port 587 uses STARTTLS; 465 uses implicit TLS.
 
-1. Commit and push all project files, including `Dockerfile`, `.dockerignore`,
-   and the updated `render.yaml`, to GitHub.
-2. In Render, open **New > Blueprint** and select the GitHub repository.
-3. Keep the branch set to `main` and the Blueprint path set to `render.yaml`.
-4. Confirm that both `checker-api` and `checker-db` show the **Free** plan.
-5. Deploy the Blueprint. There are no secret environment values to enter.
-6. Wait for both resources to show **Live**, then open the web service URL.
-7. Check `https://YOUR-SERVICE.onrender.com/api/health`; it should return
-   `{"status": "ok"}`.
+The Blueprint sets production mode and one trusted reverse proxy. Serve the frontend and API from the same service; the React app uses relative `/api` URLs. Existing accounts and data remain in the connected PostgreSQL database. Back up existing data before deployment. Check `/api/health` after deployment, then verify login, an AI check, a teacher grade, and a password reset using configured services.
 
-## Local setup
+## Docker
 
-Docker is the simplest local setup because it includes all three OCR languages:
-
-```bash
-docker build -t checker-free .
-docker run --rm -p 8000:8000 -e PORT=8000 checker-free
+```sh
+docker build -t assignment-checker .
+docker run --rm -p 8000:8000 --env-file .env \
+  -e APP_ORIGIN=http://localhost:8000 -e NODE_ENV=development -e APP_ENV=development \
+  -v checker-data:/data assignment-checker
 ```
 
-Then open `http://127.0.0.1:8000`.
+The development overrides allow session cookies over local HTTP. For production, keep production mode and use an HTTPS origin. Use PostgreSQL or persist `/data` to retain SQLite data. Database files and `.env` are excluded from the image. The image runs as the non-root `node` user.
 
-## Free-tier limitations
+## Existing deployment migration
 
-- A Render Free Web Service sleeps when idle, so the first request after an
-  idle period can be slow.
-- Render Free PostgreSQL expires after 30 days. Export important data before
-  that deadline or create a replacement free database for continued demos.
-- The browser downloads an approximately 181 MB quantized model the first time
-  it performs AI detection.
-- The classifier is an experimental screening signal. Published evaluation is
-  strongest for English, Chinese, and Vietnamese. Russian and Kazakh results
-  are experimental and must not be treated as proof of authorship.
-- OCR works best on printed or very neat, well-lit text. Handwriting quality
-  varies substantially.
+1. Back up SQLite/PostgreSQL and stop the old Python process.
+2. Install with `npm ci`, build with `npm run build`, and configure the same database.
+3. Run `npm start` or deploy the Docker image. Startup adds missing schema fields and the temporary analysis table.
+4. Verify the workflows above. Old `.html` links continue to work.
 
-Never use an AI-detector percentage as the sole basis for grading, discipline,
-or an accusation of academic misconduct.
-
-Password recovery uses SMTP in production. Configure `SMTP_HOST`, `SMTP_PORT`,
-`SMTP_USER`, `SMTP_PASSWORD`, and `SMTP_FROM`. In local development, the reset
-link is returned on the page so the flow can be tested without email.
-
-Registration roles are assigned by the SDU address: numeric local-parts become
-students, while name-based local-parts become teachers.
+For rollback, restore the earlier code revision; existing tables and password hashes retain their format. Do not run both versions concurrently during migration. The new frontend requires the new Express API because saved checks use server-issued analysis IDs.

@@ -1,22 +1,22 @@
-FROM python:3.12-slim-bookworm
-
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends \
-        tesseract-ocr \
-        tesseract-ocr-eng \
-        tesseract-ocr-rus \
-        tesseract-ocr-kaz \
-    && apt-get clean \
-    && find /var/lib/apt/lists -type f -delete
-
+FROM node:22-bookworm-slim AS build
 WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci
+COPY client ./client
+COPY shared ./shared
+COPY vite.config.js ./
+RUN npm run build
 
-COPY requirements.txt ./
-RUN pip install --no-cache-dir -r requirements.txt
-
-COPY . ./
-
-ENV PYTHONUNBUFFERED=1
-ENV TESSERACT_LANGUAGES=eng+rus+kaz
-
-CMD ["python", "server.py"]
+FROM node:22-bookworm-slim
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev && mkdir /data && chown node:node /data
+COPY --from=build /app/dist ./dist
+COPY server ./server
+COPY shared ./shared
+ENV NODE_ENV=production
+ENV PORT=8000
+ENV DB_PATH=/data/checker.db
+USER node
+EXPOSE 8000
+CMD ["node", "server/index.js"]

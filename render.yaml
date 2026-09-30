@@ -6,6 +6,18 @@ services:
     dockerfilePath: ./Dockerfile
     healthCheckPath: /api/health
     envVars:
+      - key: NODE_ENV
+        value: production
+      - key: APP_ENV
+        value: production
+      - key: TRUST_PROXY
+        value: "1"
+      - key: APP_ORIGIN
+        sync: false
+      - key: CLOUDFLARE_ACCOUNT_ID
+        sync: false
+      - key: CLOUDFLARE_API_TOKEN
+        sync: false
       - key: DATABASE_URL
         fromDatabase:
           name: checker-db
