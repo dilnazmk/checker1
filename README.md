@@ -1,4 +1,4 @@
-# CheckMate — AI-Assisted Practical Work Review for Teachers
+# CheckMate: AI-Assisted Practical Work Review for Teachers
 
 [![Repository](https://img.shields.io/badge/GitHub-dilnazmk%2Fchecker1-181717?logo=github)](https://github.com/dilnazmk/checker1)
 [![Last commit](https://img.shields.io/github/last-commit/dilnazmk/checker1)](https://github.com/dilnazmk/checker1/commits/main)
@@ -8,10 +8,10 @@
 
 | | |
 |---|---|
-| **Course** | PED 741 — Software Development Practice (SDU) |
+| **Course** | PED 741: Software Development Practice (SDU) |
 | **Authors** | Dilnaz Myrzakhmet ([@dilnazmk](https://github.com/dilnazmk)), Assel Koishybayeva ([@asselinaa](https://github.com/asselinaa)) |
-| **Deliverable** | Deliverable 1 — Application Scope, Vision & Development Plan |
-| **Status** | v0.5 — React 19 + Express 5 working app → v1 (TypeScript, Prisma, AI worker, rubrics) |
+| **Deliverable** | Deliverable 1: Application Scope, Vision & Development Plan |
+| **Status** | v0.5: React 19 + Express 5 working app → v1 (TypeScript, Prisma, AI worker, rubrics) |
 
 ## What is CheckMate?
 
@@ -27,11 +27,11 @@ screening signal, never a grade on its own.
 
 ### Core features (v1 scope)
 
-1. **Assignments & rubrics** — teachers create assignments with weighted criteria.
-2. **Attempt submission** — students upload a photo / scan / PDF page of their work; multiple attempts are allowed.
-3. **Background AI review** — a queued worker performs OCR, rubric-based scoring, feedback drafting and an optional "AI-writing likelihood" signal.
-4. **Teacher review queue** — approve / edit AI feedback, set the final grade, or return the work for revision.
-5. **Progress & group analytics** — attempt-by-attempt progress for students; most frequently failed criteria for each group.
+1. **Assignments & rubrics**: teachers create assignments with weighted criteria.
+2. **Attempt submission**: students upload a photo / scan / PDF page of their work; multiple attempts are allowed.
+3. **Background AI review**: a queued worker performs OCR, rubric-based scoring, feedback drafting and an optional "AI-writing likelihood" signal.
+4. **Teacher review queue**: approve / edit AI feedback, set the final grade, or return the work for revision.
+5. **Progress & group analytics**: attempt-by-attempt progress for students; most frequently failed criteria for each group.
 
 ## Repository layout
 

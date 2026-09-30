@@ -1,4 +1,4 @@
-# CheckMate — Specifications
+# CheckMate: Specifications
 
 > Version 1.0 · Deliverable 1 · PED 741 · Authors: Dilnaz Myrzakhmet, Assel Koishybayeva
 
@@ -6,7 +6,7 @@
 
 Teachers of practical courses spend many hours reading handwritten or printed
 practical work, writing the same comments again and again, and still return feedback
-days after submission — when students have already moved on. Students, in turn,
+days after submission, when students have already moved on. Students, in turn,
 receive a bare number with little explanation of *which* criterion they missed, and
 rarely get a chance to fix the work. Generic AI detectors add noise: their scores are
 unreliable (especially for Russian and Kazakh) and are sometimes misused as proof.
@@ -20,9 +20,9 @@ feedback** with the teacher kept in control.
 
 | Persona | Description | Goals | Pain points |
 |---|---|---|---|
-| **Aigerim — University teacher** | Teaches 4 groups (~100 students), checks weekly practical work | Grade fairly and quickly; see which topics a group misunderstood | Repetitive comments; late feedback; no overview of common mistakes |
-| **Daniyar — Undergraduate student** | Submits practical work every week, often from a phone photo | Know exactly what to fix before the deadline; improve the grade | Gets a number without explanation; no second chance |
-| **Madina — Teaching assistant** | Helps a teacher with first-pass review | Pre-sort submissions; flag suspicious ones | Has no shared queue with the teacher |
+| **Aigerim, university teacher** | Teaches 4 groups (~100 students), checks weekly practical work | Grade fairly and quickly; see which topics a group misunderstood | Repetitive comments; late feedback; no overview of common mistakes |
+| **Daniyar, undergraduate student** | Submits practical work every week, often from a phone photo | Know exactly what to fix before the deadline; improve the grade | Gets a number without explanation; no second chance |
+| **Madina, teaching assistant** | Helps a teacher with first-pass review | Pre-sort submissions; flag suspicious ones | Has no shared queue with the teacher |
 
 ## 3. Roles & permissions
 
@@ -40,7 +40,7 @@ feedback** with the teacher kept in control.
 Role is derived from the SDU e-mail at registration (`roleFor` in `server/auth.js`):
 numeric local part (e.g. `220107123@sdu.edu.kz`) → student, alphabetic local part
 (e.g. `aidos.smagulov@sdu.edu.kz`) → teacher. E-mail ownership is not verified yet
-(no confirmation link) — a known limitation, planned for Week 5.
+(no confirmation link), a known limitation, planned for Week 5.
 
 Authentication (already implemented): passwords hashed with salted PBKDF2
 (120 000 iterations) and compared in constant time; 7-day session token in an
@@ -91,7 +91,7 @@ and are sent by SMTP in production (shown locally in development).
 
 **Alternative / error flows**
 - 2a. Unsupported type or file > 10 MB → client-side error before upload.
-- 4a. Network failure → upload retried up to 3 times with back-off; then "Upload failed — Retry".
+- 4a. Network failure → upload retried up to 3 times with back-off; then "Upload failed. Retry".
 - 5a. Maximum attempts reached or deadline passed → `409 Conflict`, message explains why.
 - 5b. Server rejects file after content sniffing (e.g. renamed executable) → `422`.
 
@@ -131,7 +131,7 @@ and are sent by SMTP in production (shown locally in development).
 1. Teacher opens the review queue, filtered by group / assignment, oldest first.
 2. Opens an attempt: original image on the left, extracted text and AI draft on the right.
 3. Adjusts per-criterion scores and edits the feedback text.
-4. Clicks **Grade** — `PATCH /api/v1/attempts/:id` with the final grade.
+4. Clicks **Grade**: `PATCH /api/v1/attempts/:id` with the final grade.
 5. Student receives the grade and feedback on their dashboard.
 
 **Alternative / error flows**
@@ -146,7 +146,7 @@ Teacher selects a group and an assignment and sees: average score per criterion,
 three most frequently failed criteria, attempt-to-attempt improvement and students
 with no submission. Data is computed by SQL aggregate views; no AI is required.
 
-## 5. State machine — `Attempt`
+## 5. State machine: `Attempt`
 
 ```
             submit            enqueue           worker picks
@@ -181,7 +181,7 @@ with no submission. Data is computed by SQL aggregate views; no AI is required.
 Invalid transitions are rejected in the domain layer (`AttemptStateMachine.transition()`)
 with `409 Conflict`; every transition is written to `attempt_events` for auditing.
 
-### Secondary state machine — `Assignment`
+### Secondary state machine: `Assignment`
 
 | From \ Event | `publish` | `close` (deadline) | `archive` | `edit` |
 |---|---|---|---|---|

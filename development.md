@@ -1,4 +1,4 @@
-# CheckMate — Development Guide
+# CheckMate: Development Guide
 
 > How to set up a working development environment for CheckMate (PED 741).
 
@@ -6,7 +6,7 @@
 
 | Tool | Version | Check |
 |---|---|---|
-| Node.js | **≥ 22.16** — ES Modules; uses `node:sqlite`, `node --watch`, `--env-file-if-exists` | `node -v` |
+| Node.js | **≥ 22.16**, ES Modules; uses `node:sqlite`, `node --watch`, `--env-file-if-exists` | `node -v` |
 | npm | ≥ 10 (bundled with Node 22) | `npm -v` |
 | PostgreSQL | **16** (local install or Docker) | `psql --version` |
 | Git | ≥ 2.40, SSH key added to GitHub | `ssh -T git@github.com` |
@@ -45,11 +45,11 @@ Recommended workspace settings (`.vscode/settings.json`):
 
 PostgreSQL is optional for local development: without `DATABASE_URL` the app uses a
 local SQLite file (`checker.db`) through `node:sqlite`. Cloudflare and SMTP credentials
-are optional too — without them everything except image analysis works, and password
+are optional too: without them everything except image analysis works, and password
 reset links are shown on the page instead of e-mailed.
 
 
-### Option A — Docker (recommended)
+### Option A: Docker (recommended)
 
 ```bash
 docker run --name checkmate-db \
@@ -57,7 +57,7 @@ docker run --name checkmate-db \
   -p 5432:5432 -d postgres:16
 ```
 
-### Option B — Homebrew (macOS)
+### Option B: Homebrew (macOS)
 
 ```bash
 brew install postgresql@16
@@ -75,7 +75,7 @@ npx prisma db seed           # 1 teacher, 2 groups, 10 students, 2 assignments
 npx prisma studio            # optional: GUI for the database
 ```
 
-The job queue (`pg-boss`) creates its own `pgboss` schema automatically on first start —
+The job queue (`pg-boss`) creates its own `pgboss` schema automatically on first start;
 no Redis is required.
 
 ## 4. Environment variables
