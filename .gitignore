@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.env
+*.db-wal
+*.db-shm
+playwright-report/
+test-results/
+
+# Local data and OS files
+*.db
+.DS_Store
