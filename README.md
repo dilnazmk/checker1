@@ -1,54 +1,113 @@
-# Assignment Checker
+# CheckMate — AI-Assisted Practical Work Review for Teachers
 
-React frontend (Vite and React Router) and Express backend. Students upload assignment images, view analysis and submission history, and track grades. Teachers organize groups and grade attempts. Login, signup, profiles, and password recovery are included.
+[![Repository](https://img.shields.io/badge/GitHub-dilnazmk%2Fchecker1-181717?logo=github)](https://github.com/dilnazmk/checker1)
+[![Last commit](https://img.shields.io/github/last-commit/dilnazmk/checker1)](https://github.com/dilnazmk/checker1/commits/main)
+[![Commit activity](https://img.shields.io/github/commit-activity/m/dilnazmk/checker1)](https://github.com/dilnazmk/checker1/graphs/commit-activity)
+![Course](https://img.shields.io/badge/course-PED%20741-blue)
+![Stack](https://img.shields.io/badge/stack-React%2019%20%7C%20TypeScript%20%7C%20Node.js%20%7C%20PostgreSQL-informational)
 
-## Run locally
+| | |
+|---|---|
+| **Course** | PED 741 — Software Development Practice (SDU) |
+| **Authors** | Dilnaz Myrzakhmet ([@dilnazmk](https://github.com/dilnazmk)), Assel Koishybayeva ([@asselinaa](https://github.com/asselinaa)) |
+| **Deliverable** | Deliverable 1 — Application Scope, Vision & Development Plan |
+| **Status** | v0.5 — React 19 + Express 5 working app → v1 (TypeScript, Prisma, AI worker, rubrics) |
 
-Install Node.js 22.16 or newer, then:
+## What is CheckMate?
 
-```sh
-npm ci
-cp .env.example .env
-npm run dev
+CheckMate is a teaching assistant for **practical assignments**. Teachers publish an
+assignment together with a grading rubric. Students photograph or upload their work,
+and a **background AI worker** reads the text (OCR), evaluates it criterion by
+criterion against the rubric and drafts written feedback. The teacher reviews the
+draft in a review queue, edits it, sets the final grade and returns the work. The
+student sees the feedback, fixes the work and submits a new attempt.
+
+**The teacher always makes the final decision.** AI output is a draft and a
+screening signal, never a grade on its own.
+
+### Core features (v1 scope)
+
+1. **Assignments & rubrics** — teachers create assignments with weighted criteria.
+2. **Attempt submission** — students upload a photo / scan / PDF page of their work; multiple attempts are allowed.
+3. **Background AI review** — a queued worker performs OCR, rubric-based scoring, feedback drafting and an optional "AI-writing likelihood" signal.
+4. **Teacher review queue** — approve / edit AI feedback, set the final grade, or return the work for revision.
+5. **Progress & group analytics** — attempt-by-attempt progress for students; most frequently failed criteria for each group.
+
+## Repository layout
+
+```
+.
+├── README.md             ← you are here
+├── specifications.md     ← use cases, state machine, CRC cards, NFRs
+├── development.md        ← environment setup, env variables, workflow
+├── agents.md             ← rules for AI coding assistants (Copilot, Claude Code, Cursor)
+├── CLAUDE.md             ← pointer to agents.md for Claude Code
+├── DEPLOYMENT.md         ← Docker and Render deployment
+│
+├── client/src/           ← React 19 routes and components (Vite + React Router)
+├── server/               ← Express 5 API, auth, SQLite/PostgreSQL adapter, Cloudflare AI
+├── shared/               ← score interpretation and feedback shared by client and server
+├── tests/                ← API integration tests (Supertest) and Playwright browser tests
+│
+└── (added during the semester)
+    ├── worker/           ← background AI worker (pg-boss job queue)
+    └── prisma/           ← Prisma schema and migrations (PostgreSQL)
 ```
 
-Open http://localhost:5173. Vite proxies `/api` to Express on port 8000. If you use a different browser origin, set `APP_ORIGIN` to match it. Add your Cloudflare account ID and API token to `.env` to enable image analysis. Other workflows work without Cloudflare credentials.
+## Quick start
+
+Requires Node.js 22.16 or newer.
+
+```bash
+git clone git@github.com:dilnazmk/checker1.git
+cd checker1
+npm ci
+cp .env.example .env      # add Cloudflare credentials to enable image analysis
+npm run dev               # web: http://localhost:5173, API: http://localhost:8000
+```
+
+Vite proxies `/api` to Express. Other workflows (auth, groups, grading) work without
+Cloudflare credentials.
 
 Production build:
 
-```sh
+```bash
 npm run build
-APP_ORIGIN=http://localhost:8000 npm start
+APP_ORIGIN=http://localhost:8000 npm start   # Express serves the built frontend and API
 ```
 
-Open http://localhost:8000. Express serves only the built frontend and API. Production HTTPS deployments should set `NODE_ENV=production`, `APP_ENV=production`, and `APP_ORIGIN=https://your-host`.
+Tests:
+
+```bash
+npm test                        # API integration tests (in-memory SQLite, mocked AI and e-mail)
+npx playwright install chromium
+npm run test:e2e                # browser workflows on desktop and mobile viewports
+```
 
 ## Data and compatibility
 
-- SQLite defaults to the original `checker.db`; `DB_PATH` overrides it. `DATABASE_URL` selects PostgreSQL.
-- Existing tables, IDs, attempts, groups, sessions, and Python PBKDF2 password hashes remain compatible. Startup adds missing columns and an `analysis_results` table without clearing data. Back up the database before changing a deployed runtime.
-- Numeric SDU email addresses register as students; SDU email addresses beginning with a letter register as teachers, matching the existing application. Email ownership is not verified. Teachers retain the existing shared student roster and grading access; group management is restricted to the group owner.
-- Old `.html` page links redirect to React routes, including password reset links and teacher student profiles.
-- AI analysis uses the existing Cloudflare vision and text models. Images are sent to Cloudflare but not stored in the database. Analysis is a screening signal, not proof of authorship.
-- `/api/ocr` returns a one-use `analysis_id`. `/api/checks` requires that ID with `title` and `file_name`; scores and feedback come from the server. Existing third-party API clients must adopt this save contract. Unsaved results expire after an hour.
-- Development password recovery shows a local reset link. Production uses SMTP and never returns reset tokens. Configure the SMTP variables in `.env.example`.
+- SQLite is used by default (`DB_PATH`); `DATABASE_URL` switches to PostgreSQL.
+- Numeric SDU e-mail addresses register as students; addresses starting with a letter register as teachers.
+- Images are sent to Cloudflare Workers AI for analysis but are not stored in the database.
+- `/api/ocr` returns a one-use `analysis_id` that `/api/checks` requires; scores come from the server.
+- Development password recovery shows a local reset link; production uses SMTP.
 
-## Structure
+## Documentation
 
-- `client/src/`: React routes, reusable components, and the preserved application styling.
-- `server/`: Express API, authentication, SQLite/PostgreSQL adapter, and Cloudflare integration.
-- `shared/feedback.js`: existing score interpretation and feedback.
-- `tests/`: HTTP integration and browser workflow tests.
+| File | Contents |
+|---|---|
+| [`specifications.md`](specifications.md) | Personas, use cases, state machine transition matrix, CRC cards, non-functional requirements |
+| [`development.md`](development.md) | Prerequisites, PostgreSQL setup, recommended VS Code extensions, `.env` sample, Git workflow |
+| [`agents.md`](agents.md) | AI assistant guardrails: stack constraints, strict TypeScript, REST API standards, Conventional Commits |
 
-## Verification
+## Contributing
 
-```sh
-npm test
-npm run build
-npx playwright install chromium
-npm run test:e2e
-```
+All commits follow [Conventional Commits](https://www.conventionalcommits.org/):
+`feat:`, `fix:`, `docs:`, `refactor:`, `test:`, `chore:`. Work happens on short-lived
+feature branches merged into `main` through pull requests reviewed by the other author.
 
-API tests use an in-memory SQLite database and mock AI/email providers. Browser tests exercise the built React frontend against a real Express server with a separate temporary SQLite database and deterministic AI output. They never send mail or call Cloudflare. Live Cloudflare, SMTP, and PostgreSQL require configured services for additional deployment validation.
+## Academic integrity
 
-See [DEPLOYMENT.md](DEPLOYMENT.md) for Docker and Render setup.
+AI-writing likelihood scores are **experimental** and must never be used as the sole
+basis for a grade or an accusation of misconduct. CheckMate always shows them as a
+secondary signal next to the teacher's own judgement.
