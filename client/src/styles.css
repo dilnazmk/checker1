@@ -604,3 +604,22 @@ body.teacher-shell .avatar { border-color: var(--gold); }
 body.teacher-shell .status-dot { background: var(--gold); box-shadow: 0 0 0 4px rgba(199, 164, 94, .18); }
 
 .empty-note { color: var(--muted-soft); font-size: 13px; padding: 20px 0; }
+
+/* React pages: shared layout and accessible controls. */
+button:disabled { cursor: wait; opacity: .6; }
+.auth-tab { text-decoration: none; text-align: center; }
+.avatar { display: inline-flex; align-items: center; justify-content: center; text-decoration: none; }
+.section-spacing { margin-top: 28px; }
+.attempt-list { display: grid; gap: 16px; }
+.file-preview { object-fit: cover; }
+.history-scroll { overflow-x: auto; }
+.history-table { width: 100%; border-collapse: collapse; text-align: left; }
+.history-table th, .history-table td { padding: 16px 10px; border-bottom: 1px solid var(--line); }
+.history-table th, .history-table small { color: var(--muted); }
+.grade-form select { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 10px; max-width: 100%; }
+:focus-visible { outline: 2px solid var(--gold); outline-offset: 4px; }
+@media (max-width: 540px) {
+  .header-meta { flex-wrap: wrap; gap: 8px; }
+  .site-nav { margin-left: 0; }
+  .topbar { height: auto; min-height: 84px; padding: 12px 0; gap: 8px; }
+}
