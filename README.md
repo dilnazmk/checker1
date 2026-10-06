@@ -111,3 +111,5 @@ feature branches merged into `main` through pull requests reviewed by the other 
 AI-writing likelihood scores are **experimental** and must never be used as the sole
 basis for a grade or an accusation of misconduct. CheckMate always shows them as a
 secondary signal next to the teacher's own judgement.
+ 
+ 
