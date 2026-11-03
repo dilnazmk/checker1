@@ -112,4 +112,45 @@ AI-writing likelihood scores are **experimental** and must never be used as the 
 basis for a grade or an accusation of misconduct. CheckMate always shows them as a
 secondary signal next to the teacher's own judgement.
  
- 
+ ## Database Setup
+
+CheckMate uses **PostgreSQL 16** and **Prisma**. Design docs: [`docs/erd.pdf`](docs/erd.pdf), [`docs/database-schema.md`](docs/database-schema.md), schema: [`prisma/schema.prisma`](prisma/schema.prisma).
+
+### 1. Install dependencies
+
+```bash
+npm install
+npm install -D prisma@6
+npm install @prisma/client@6
+```
+
+### 2. Start PostgreSQL
+
+Local installation, or Docker:
+
+```bash
+docker run --name checkmate-db -e POSTGRES_USER=checkmate -e POSTGRES_PASSWORD=checkmate \
+  -e POSTGRES_DB=checkmate -p 5432:5432 -d postgres:16
+```
+
+### 3. Configure the connection
+
+Create `.env` in the project root (it is git-ignored; see `.env.example`):
+
+```env
+DATABASE_URL="postgresql://checkmate:checkmate@localhost:5432/checkmate?schema=public"
+```
+
+### 4. Run migrations
+
+```bash
+npx prisma validate          # check the schema
+npx prisma migrate dev       # create tables and apply migrations
+npx prisma generate          # generate the Prisma Client
+```
+
+### 5. Inspect the database (optional)
+
+```bash
+npx prisma studio
+```

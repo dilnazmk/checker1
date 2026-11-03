@@ -1,0 +1,255 @@
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------- Enums ----------
+
+enum Role {
+  STUDENT
+  TEACHER
+}
+
+enum AssignmentStatus {
+  DRAFT
+  PUBLISHED
+  CLOSED
+}
+
+enum AttemptStatus {
+  QUEUED
+  ANALYZING
+  REVIEWED
+  RETURNED
+  GRADED
+  FAILED
+}
+
+enum AiReviewStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+// ---------- Identity & access ----------
+
+model User {
+  id           String   @id @default(uuid()) @db.Uuid
+  email        String   @unique @db.VarChar(255)
+  passwordHash String   @map("password_hash") @db.VarChar(255)
+  fullName     String   @map("full_name") @db.VarChar(150)
+  role         Role
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  ownedGroups    Group[]
+  memberships    GroupMember[]
+  assignments    Assignment[]
+  attempts       Attempt[]
+  attemptEvents  AttemptEvent[]
+  sessions       Session[]
+  passwordResets PasswordReset[]
+
+  @@map("users")
+}
+
+model Session {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  tokenHash String   @unique @map("token_hash") @db.VarChar(255)
+  userAgent String?  @map("user_agent") @db.VarChar(255)
+  expiresAt DateTime @map("expires_at") @db.Timestamptz(6)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("sessions")
+}
+
+model PasswordReset {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  tokenHash String    @unique @map("token_hash") @db.VarChar(255)
+  expiresAt DateTime  @map("expires_at") @db.Timestamptz(6)
+  usedAt    DateTime? @map("used_at") @db.Timestamptz(6)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("password_resets")
+}
+
+// ---------- Groups ----------
+
+model Group {
+  id        String   @id @default(uuid()) @db.Uuid
+  teacherId String   @map("teacher_id") @db.Uuid
+  name      String   @db.VarChar(100)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  teacher     User              @relation(fields: [teacherId], references: [id], onDelete: Restrict)
+  members     GroupMember[]
+  assignments AssignmentGroup[]
+
+  // also serves as the index for "groups of a teacher" (teacher_id is the leading column)
+  @@unique([teacherId, name])
+  @@map("groups")
+}
+
+// Junction table: User (student) N:M Group
+model GroupMember {
+  groupId   String   @map("group_id") @db.Uuid
+  studentId String   @map("student_id") @db.Uuid
+  joinedAt  DateTime @default(now()) @map("joined_at") @db.Timestamptz(6)
+
+  group   Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  student User  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@id([groupId, studentId])
+  @@index([studentId])
+  @@map("group_members")
+}
+
+// ---------- Assignments & rubrics ----------
+
+model Assignment {
+  id          String           @id @default(uuid()) @db.Uuid
+  teacherId   String           @map("teacher_id") @db.Uuid
+  title       String           @db.VarChar(200)
+  description String?          @db.Text
+  deadline    DateTime         @db.Timestamptz(6)
+  maxAttempts Int              @default(3) @map("max_attempts")
+  status      AssignmentStatus @default(DRAFT)
+  createdAt   DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  teacher  User              @relation(fields: [teacherId], references: [id], onDelete: Restrict)
+  groups   AssignmentGroup[]
+  criteria Criterion[]
+  attempts Attempt[]
+
+  @@index([teacherId])
+  @@index([status, deadline])
+  @@map("assignments")
+}
+
+// Junction table: Assignment N:M Group
+model AssignmentGroup {
+  assignmentId String   @map("assignment_id") @db.Uuid
+  groupId      String   @map("group_id") @db.Uuid
+  publishedAt  DateTime @default(now()) @map("published_at") @db.Timestamptz(6)
+
+  assignment Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  group      Group      @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@id([assignmentId, groupId])
+  @@index([groupId])
+  @@map("assignment_groups")
+}
+
+model Criterion {
+  id           String  @id @default(uuid()) @db.Uuid
+  assignmentId String  @map("assignment_id") @db.Uuid
+  title        String  @db.VarChar(200)
+  description  String? @db.Text
+  weight       Decimal @db.Decimal(5, 2)
+  maxPoints    Int     @map("max_points")
+  position     Int
+
+  assignment Assignment       @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  scores     CriterionScore[]
+
+  @@unique([assignmentId, position])
+  @@map("criteria")
+}
+
+// ---------- Attempts & review ----------
+
+model Attempt {
+  id              String        @id @default(uuid()) @db.Uuid
+  assignmentId    String        @map("assignment_id") @db.Uuid
+  studentId       String        @map("student_id") @db.Uuid
+  attemptNumber   Int           @map("attempt_number")
+  fileUrl         String        @map("file_url") @db.VarChar(500)
+  fileMimeType    String        @map("file_mime_type") @db.VarChar(50)
+  fileSizeBytes   Int           @map("file_size_bytes")
+  status          AttemptStatus @default(QUEUED)
+  finalGrade      Decimal?      @map("final_grade") @db.Decimal(5, 2)
+  teacherFeedback String?       @map("teacher_feedback") @db.Text
+  submittedAt     DateTime      @default(now()) @map("submitted_at") @db.Timestamptz(6)
+  gradedAt        DateTime?     @map("graded_at") @db.Timestamptz(6)
+
+  assignment Assignment       @relation(fields: [assignmentId], references: [id], onDelete: Restrict)
+  student    User             @relation(fields: [studentId], references: [id], onDelete: Restrict)
+  aiReview   AiReview?
+  scores     CriterionScore[]
+  events     AttemptEvent[]
+
+  // also serves as the index for a student's attempt history
+  @@unique([studentId, assignmentId, attemptNumber])
+  @@index([assignmentId])
+  @@index([status, submittedAt])
+  @@map("attempts")
+}
+
+// 1:1 with Attempt (attempt_id is UNIQUE)
+model AiReview {
+  id                String         @id @default(uuid()) @db.Uuid
+  attemptId         String         @unique @map("attempt_id") @db.Uuid
+  status            AiReviewStatus @default(PENDING)
+  extractedText     String?        @map("extracted_text") @db.Text
+  draftFeedback     String?        @map("draft_feedback") @db.Text
+  writingLikelihood Decimal?       @map("writing_likelihood") @db.Decimal(3, 2)
+  modelName         String?        @map("model_name") @db.VarChar(100)
+  retryCount        Int            @default(0) @map("retry_count")
+  errorMessage      String?        @map("error_message") @db.Text
+  createdAt         DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  completedAt       DateTime?      @map("completed_at") @db.Timestamptz(6)
+
+  attempt Attempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+
+  @@map("ai_reviews")
+}
+
+model CriterionScore {
+  id             String   @id @default(uuid()) @db.Uuid
+  attemptId      String   @map("attempt_id") @db.Uuid
+  criterionId    String   @map("criterion_id") @db.Uuid
+  aiPoints       Decimal? @map("ai_points") @db.Decimal(5, 2)
+  teacherPoints  Decimal? @map("teacher_points") @db.Decimal(5, 2)
+  aiComment      String?  @map("ai_comment") @db.Text
+  teacherComment String?  @map("teacher_comment") @db.Text
+  updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  attempt   Attempt   @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  criterion Criterion @relation(fields: [criterionId], references: [id], onDelete: Restrict)
+
+  @@unique([attemptId, criterionId])
+  @@index([criterionId])
+  @@map("criterion_scores")
+}
+
+model AttemptEvent {
+  id         String         @id @default(uuid()) @db.Uuid
+  attemptId  String         @map("attempt_id") @db.Uuid
+  actorId    String?        @map("actor_id") @db.Uuid
+  fromStatus AttemptStatus? @map("from_status")
+  toStatus   AttemptStatus  @map("to_status")
+  note       String?        @db.Text
+  createdAt  DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  attempt Attempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  actor   User?   @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([attemptId, createdAt])
+  @@index([actorId])
+  @@map("attempt_events")
+}
