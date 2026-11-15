@@ -154,3 +154,8 @@ npx prisma generate          # generate the Prisma Client
 ```bash
 npx prisma studio
 ```
+## System Analysis & UML
+
+- [System Requirements Specification](docs/specifications.md)
+- Behavioral: [Use Case](docs/diagrams/behavioral/use-case.md) · [Activity](docs/diagrams/behavioral/activity.md) · [State Machine](docs/diagrams/behavioral/state-machine.md)
+- Structural: [CRC Cards](docs/diagrams/structural/crc-cards.md) · [Class Diagram](docs/diagrams/structural/class-diagram.md) · [Sequence Diagram](docs/diagrams/structural/sequence.md)
