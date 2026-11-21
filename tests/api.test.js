@@ -6,7 +6,7 @@ import { createApp } from '../server/app.js';
 import { decodeImage, normalizeAnalysis } from '../server/analysis.js';
 import { hashToken } from '../server/auth.js';
 
-let db, app, student, teacher, other, studentId, groupId, checkId;
+let db, app, server, student, teacher, other, studentId, groupId, checkId;
 const password = 'test-password-123';
 before(async () => {
   db = await openDatabase({ url: null, filename: ':memory:' });
@@ -14,9 +14,14 @@ before(async () => {
     analyze: async () => ({ text: 'Example assignment text', score: 62, chunks: [{ text: 'Example', score: 62 }], word_count: 25, languages: ['eng'] }),
     mail: async () => {},
   });
-  student = request.agent(app); teacher = request.agent(app); other = request.agent(app);
+  server = app.listen(0);
+  student = request.agent(server); teacher = request.agent(server); other = request.agent(server);
 });
-after(async () => { await db.close(); });
+after(async () => {
+  server.closeAllConnections();
+  await new Promise(resolve => server.close(resolve));
+  await db.close();
+});
 
 test('authentication, legacy password compatibility, and session cookies', async () => {
   await request(app).get('/api/health').expect(200, { status: 'ok' });
