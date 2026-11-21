@@ -10,6 +10,20 @@ import { feedbackFor } from '../shared/feedback.js';
 
 export async function createApp({ db, env = process.env, analyze = data => analyzeImage(data, env), mail = (email, url) => sendResetEmail(email, url, env), limit = true, dist = path.resolve('dist') }) {
   const app = express();
+  const serializeRoute = (handler) => {
+    let queue = Promise.resolve();
+    return async (...args) => {
+      const previous = queue;
+      let release;
+      queue = new Promise(resolve => { release = resolve; });
+      await previous;
+      try {
+        return await handler(...args);
+      } finally {
+        release();
+      }
+    };
+  };
   app.disable('x-powered-by');
   if (env.TRUST_PROXY) app.set('trust proxy', Number(env.TRUST_PROXY));
   await db.query(`CREATE TABLE IF NOT EXISTS analysis_results (id TEXT PRIMARY KEY, student_id ${env.DATABASE_URL ? 'BIGINT' : 'INTEGER'} NOT NULL REFERENCES students(id) ON DELETE CASCADE,
@@ -162,7 +176,7 @@ export async function createApp({ db, env = process.env, analyze = data => analy
     res.json({ checks: await db.query(`${sql} ORDER BY checks.created_at DESC, checks.id DESC`, params) });
   });
   if (limit) app.use('/api/ocr', student, rateLimit({ windowMs: 15 * 60000, limit: 20, message: { error: 'Too many checks. Please try again later.' } }));
-  app.post('/api/ocr', student, async (req, res) => {
+  app.post('/api/ocr', student, serializeRoute(async (req, res) => {
     const result = await analyze(req.body?.image_data);
     const id = token();
     const feedback = feedbackFor(result.score, result.chunks).summary;
@@ -171,8 +185,8 @@ export async function createApp({ db, env = process.env, analyze = data => analy
       await tx.query('INSERT INTO analysis_results (id, student_id, score, feedback, expires_at) VALUES (?, ?, ?, ?, ?)', [id, req.user.id, result.score, feedback, expires(60 * 60000)]);
     });
     res.json({ ...result, analysis_id: id });
-  });
-  app.post('/api/checks', student, async (req, res) => {
+  }));
+  app.post('/api/checks', student, serializeRoute(async (req, res) => {
     const title = requiredText(req.body?.title, 'Assignment title');
     const file = requiredText(req.body?.file_name, 'File name');
     const analysisId = requiredText(req.body?.analysis_id, 'Analysis id');
@@ -180,14 +194,12 @@ export async function createApp({ db, env = process.env, analyze = data => analy
       // A single-use server result prevents score tampering and duplicate saves.
       const result = await tx.one('DELETE FROM analysis_results WHERE id = ? AND student_id = ? AND expires_at > ? RETURNING score, feedback', [analysisId, req.user.id, now()]);
       if (!result) fail(400, 'This analysis has expired or was already saved. Run a new check.');
-      // Serialize attempts per student on PostgreSQL; SQLite uses BEGIN IMMEDIATE.
-      await tx.query('UPDATE students SET name = name WHERE id = ?', [req.user.id]);
-      const previous = await tx.one('SELECT COUNT(*) AS total FROM checks WHERE student_id = ? AND LOWER(title) = LOWER(?)', [req.user.id, title]);
+      const previous = await tx.one('SELECT COALESCE(MAX(attempt_number), 0) AS total FROM checks WHERE student_id = ? AND LOWER(title) = LOWER(?)', [req.user.id, title]);
       return tx.one(`INSERT INTO checks (student_id, title, attempt_number, file_name, score, feedback, status, created_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?) RETURNING *`, [req.user.id, title, Number(previous.total) + 1, file, result.score, result.feedback, 'Checked', now()]);
     });
     res.status(201).json({ ...check, check_id: check.id });
-  });
+  }));
   app.post('/api/checks/:id/grade', teacher, async (req, res) => {
     const grade = req.body?.grade;
     if (!Number.isInteger(grade) || grade < 0 || grade > 100) fail(400, 'Enter a whole number between 0 and 100.');
